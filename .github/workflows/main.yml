@@ -1,0 +1,66 @@
+name: Build Islamic App
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+
+    - name: Create App Structure
+      run: |
+        mkdir -p app/src/main/java/com/abdelazim/islamicapp
+        mkdir -p app/src/main/res/layout
+        mkdir -p app/src/main/res/drawable
+        mkdir -p app/src/main/res/values
+        cp father_background.jpg app/src/main/res/drawable/
+        
+        echo '<resources><string name="app_name">تطبيق محمد عبد العظيم الطويل</string></resources>' > app/src/main/res/values/strings.xml
+        
+        cat <<EOF > app/src/main/res/layout/activity_main.xml
+        <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+            android:layout_width="match_parent" android:layout_height="match_parent"
+            android:background="@drawable/father_background">
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="صدقة جارية: محمد عبد العظيم الطويل" android:layout_centerInParent="true" 
+                android:textColor="#FFFFFF" android:textSize="22sp" android:textStyle="bold"/>
+        </RelativeLayout>
+        EOF
+
+        cat <<EOF > app/src/main/java/com/abdelazim/islamicapp/MainActivity.java
+        package com.abdelazim.islamicapp;
+        import android.os.Bundle;
+        import androidx.appcompat.app.AppCompatActivity;
+        public class MainActivity extends AppCompatActivity {
+            @Override protected void onCreate(Bundle savedInstanceState) {
+                super.onCreate(savedInstanceState);
+                setContentView(R.layout.activity_main);
+            }
+        }
+        EOF
+
+    - name: Build APK
+      run: |
+        cat <<EOF > build.gradle
+        buildscript { repositories { google(); mavenCentral() }; dependencies { classpath 'com.android.tools.build:gradle:8.1.1' } }
+        allprojects { repositories { google(); mavenCentral() } }
+        EOF
+        cat <<EOF > app/build.gradle
+        plugins { id 'com.android.application' }
+        android { namespace 'com.abdelazim.islamicapp'; compileSdk 34
+            defaultConfig { applicationId "com.abdelazim.islamicapp"; minSdk 21; targetSdk 34; versionCode 1; versionName "1.0" }
+        }
+        EOF
+        echo "include ':app'" > settings.gradle
+        sudo apt-get install -y gradle
+        gradle assembleDebug
+
+    - name: Upload APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: Mohamed-Abdelazim-App
+        path: "**/build/outputs/apk/debug/*.apk"
